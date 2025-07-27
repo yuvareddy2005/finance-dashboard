@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.reddy.finance_dashboard.dto.UserRegistrationRequest;
 import com.reddy.finance_dashboard.entity.User;
 import com.reddy.finance_dashboard.service.UserService;
 
@@ -17,7 +18,7 @@ public class UserController {
     private UserService userService;
 
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
+    public User createUser(@RequestBody UserRegistrationRequest registrationRequest) {
+        return userService.createUser(registrationRequest);
     }
 }
