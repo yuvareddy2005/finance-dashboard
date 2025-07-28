@@ -2,7 +2,6 @@ package com.reddy.finance_dashboard.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod; // <-- ADD THIS IMPORT
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,12 +17,10 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                // v-- THIS IS THE CHANGE --v
-                .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll() // Allow anyone to create a user
-                .anyRequest().authenticated() // All other requests need authentication
-                // ^-- THIS IS THE CHANGE --^
+                // v-- UPDATE THIS LINE --v
+                .requestMatchers("/api/v1/auth/**").permitAll() // Allow all requests to /api/v1/auth/**
+                .anyRequest().authenticated()
             );
-            // We don't need .httpBasic() for this public endpoint
 
         return http.build();
     }
