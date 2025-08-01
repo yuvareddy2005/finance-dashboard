@@ -17,8 +17,12 @@ import com.reddy.finance_dashboard.service.CustomUserDetailsService;
 import com.reddy.finance_dashboard.service.JwtService;
 import com.reddy.finance_dashboard.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/v1/auth")
+@Tag(name = "Authentication Controller", description = "Endpoints for user registration and login")
 public class AuthController {
 
     @Autowired
@@ -33,24 +37,22 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
+    @Operation(summary = "Register a new user", description = "Creates a new user account with the provided details.")
     @PostMapping("/register")
     public User registerUser(@RequestBody UserRegistrationRequest registrationRequest) {
         return userService.createUser(registrationRequest);
     }
 
-    // v-- ADD THIS NEW METHOD --v
+    @Operation(summary = "Authenticate a user", description = "Authenticates a user with their email and password, returning a JWT upon success.")
     @PostMapping("/login")
     public LoginResponse loginUser(@RequestBody LoginRequest loginRequest) {
-        // Authenticate the user
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
         );
 
-        // If authentication is successful, generate a token
         final UserDetails userDetails = customUserDetailsService.loadUserByUsername(loginRequest.getEmail());
         final String token = jwtService.generateToken(userDetails);
 
-        // Return the token in the response
         return new LoginResponse(token);
     }
 }

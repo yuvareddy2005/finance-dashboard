@@ -1,7 +1,5 @@
 package com.reddy.finance_dashboard.config;
 
-// We are removing the @Autowired fields here
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -17,23 +15,27 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // We removed the @Autowired fields for JwtAuthenticationFilter and AuthenticationProvider
-
     @Bean
     public SecurityFilterChain securityFilterChain(
         HttpSecurity http,
-        AuthenticationProvider authenticationProvider, // <-- Inject here instead
-        JwtAuthenticationFilter jwtAuthFilter         // <-- Inject here instead
+        AuthenticationProvider authenticationProvider,
+        JwtAuthenticationFilter jwtAuthFilter
     ) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                // v-- ADD THESE NEW PUBLIC URLS --v
+                .requestMatchers(
+                    "/api/v1/auth/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider) // Use the injected provider
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Use the injected filter
+            .authenticationProvider(authenticationProvider)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
