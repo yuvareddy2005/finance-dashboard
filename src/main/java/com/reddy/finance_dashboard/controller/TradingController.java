@@ -2,13 +2,15 @@ package com.reddy.finance_dashboard.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping; // <-- ADD THIS IMPORT
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.reddy.finance_dashboard.dto.PortfolioResponse;
 import com.reddy.finance_dashboard.dto.TradeRequest;
-import com.reddy.finance_dashboard.entity.TradeOrder;
+import com.reddy.finance_dashboard.entity.TradeOrder; // <-- ADD THIS IMPORT
 import com.reddy.finance_dashboard.service.TradingService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,5 +31,13 @@ public class TradingController {
     public ResponseEntity<TradeOrder> executeTrade(@RequestBody TradeRequest tradeRequest) {
         TradeOrder executedOrder = tradingService.executeTrade(tradeRequest);
         return ResponseEntity.ok(executedOrder);
+    }
+
+    @Operation(summary = "Get user portfolio", description = "Retrieves the current user's stock portfolio, including all holdings and their current market values. Requires authentication.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/portfolio")
+    public ResponseEntity<PortfolioResponse> getPortfolio() {
+        PortfolioResponse portfolio = tradingService.getPortfolio();
+        return ResponseEntity.ok(portfolio);
     }
 }

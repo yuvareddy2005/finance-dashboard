@@ -3,12 +3,16 @@ package com.reddy.finance_dashboard.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.reddy.finance_dashboard.dto.HoldingResponse;
+import com.reddy.finance_dashboard.dto.PortfolioResponse;
 import com.reddy.finance_dashboard.dto.TradeRequest;
 import com.reddy.finance_dashboard.entity.Account;
 import com.reddy.finance_dashboard.entity.Holding;
@@ -23,7 +27,7 @@ import com.reddy.finance_dashboard.repository.PortfolioRepository;
 import com.reddy.finance_dashboard.repository.StockPriceRepository;
 import com.reddy.finance_dashboard.repository.StockRepository;
 import com.reddy.finance_dashboard.repository.TradeOrderRepository;
-import com.reddy.finance_dashboard.repository.UserRepository; // <-- THIS IMPORT WAS MISSING
+import com.reddy.finance_dashboard.repository.UserRepository;
 
 @Service
 public class TradingService {
@@ -122,5 +126,36 @@ public class TradingService {
         tradeOrder.setTimestamp(LocalDateTime.now());
         
         return tradeOrderRepository.save(tradeOrder);
+    }
+
+    @Transactional(readOnly = true)
+    public PortfolioResponse getPortfolio() {
+        // 1. Get the currently authenticated user
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+
+        // 2. Find their portfolio
+        Portfolio portfolio = portfolioRepository.findByUser(user)
+                .orElseThrow(() -> new IllegalStateException("Portfolio not found for user"));
+
+        // 3. Find all their holdings
+        List<Holding> holdings = holdingRepository.findByPortfolio(portfolio);
+
+        // 4. Convert holdings to DTOs and calculate total value
+        List<HoldingResponse> holdingResponses = holdings.stream()
+            .map(holding -> {
+                BigDecimal latestPrice = stockPriceRepository.findLatestPriceByStockId(holding.getStock().getId())
+                        .map(StockPrice::getPrice)
+                        .orElse(BigDecimal.ZERO);
+                return HoldingResponse.fromEntity(holding, latestPrice);
+            })
+            .collect(Collectors.toList());
+
+        BigDecimal totalPortfolioValue = holdingResponses.stream()
+            .map(HoldingResponse::getCurrentValue)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new PortfolioResponse(totalPortfolioValue, holdingResponses);
     }
 }
