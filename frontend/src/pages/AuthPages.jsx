@@ -1,13 +1,14 @@
 import React from 'react';
+import { RegisterForm } from '../components/RegisterForm'; 
 
 // A simple placeholder for our Login Page
 export const LoginPage = () => {
   return <h2>Login Page</h2>;
 };
 
-// A simple placeholder for our Registration Page
+// The Register Page now renders our form component
 export const RegisterPage = () => {
-  return <h2>Register Page</h2>;
+  return <RegisterForm />;
 };
 
 // A simple placeholder for our main Dashboard Page
