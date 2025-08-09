@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, Outlet } from 'react-router-dom';
+import { Logo } from './Logo'; // <-- Import our new Logo component
 
 export const Layout = () => {
   const sidebarStyle = {
@@ -29,7 +30,9 @@ export const Layout = () => {
   return (
     <div>
       <aside style={sidebarStyle}>
-        <h1 style={{ color: '#f97316', marginBottom: '40px' }}>Finara</h1>
+        <div style={{ marginBottom: '40px' }}>
+          <Logo /> {/* <-- Use the Logo component here */}
+        </div>
         <nav>
           <Link to="/dashboard" style={navLinkStyle}>Dashboard</Link>
           <Link to="/portfolio" style={navLinkStyle}>Portfolio</Link>
