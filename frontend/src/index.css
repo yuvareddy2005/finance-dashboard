@@ -1,0 +1,33 @@
+/* Import a modern, clean font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+/* Define our color palette */
+:root {
+  /* "Modern Charcoal" Theme */
+  --background-dark-start: #111827; /* A very dark gray */
+  --background-dark-end: #1f2937;   /* A slightly lighter charcoal gray */
+
+  --primary-accent: #f97316; /* A vibrant, energetic orange */
+  --text-light: #e5e7eb;
+  --text-dark: #9ca3af;
+}
+
+/* Apply global styles */
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  /* Apply the new linear gradient background */
+  background: linear-gradient(180deg, var(--background-dark-start) 0%, var(--background-dark-end) 100%);
+  color: var(--text-light);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh; /* Ensure the gradient covers the full page height */
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-light);
+}
+
+a {
+  color: var(--primary-accent);
+}

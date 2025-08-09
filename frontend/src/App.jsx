@@ -1,27 +1,25 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // Import Navigate
 import { LoginPage, RegisterPage, DashboardPage } from './pages/AuthPages';
+import { Layout } from './components/Layout';
 
 function App() {
   return (
     <Router>
-      <div>
-        <nav>
-          <ul>
-            <li><Link to="/login">Login</Link></li>
-            <li><Link to="/register">Register</Link></li>
-            <li><Link to="/dashboard">Dashboard</Link></li>
-          </ul>
-        </nav>
+      <Routes>
+        {/* Add a route to redirect the root path to the login page */}
+        <Route path="/" element={<Navigate to="/login" />} />
 
-        <hr />
+        {/* Public routes that don't have the sidebar */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+        {/* Protected routes that will be nested inside the Layout */}
+        <Route element={<Layout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-        </Routes>
-      </div>
+          {/* We will add routes for Portfolio, Transfers, etc. here later */}
+        </Route>
+      </Routes>
     </Router>
   );
 }
