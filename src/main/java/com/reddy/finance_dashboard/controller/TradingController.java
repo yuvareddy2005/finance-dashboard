@@ -2,15 +2,15 @@ package com.reddy.finance_dashboard.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping; // <-- ADD THIS IMPORT
+import org.springframework.web.bind.annotation.GetMapping; // <-- ADD THIS IMPORT
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.reddy.finance_dashboard.dto.PortfolioResponse;
+import com.reddy.finance_dashboard.dto.PortfolioResponse; // <-- ADD THIS IMPORT
 import com.reddy.finance_dashboard.dto.TradeRequest;
-import com.reddy.finance_dashboard.entity.TradeOrder; // <-- ADD THIS IMPORT
+import com.reddy.finance_dashboard.entity.TradeOrder;
 import com.reddy.finance_dashboard.service.TradingService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/trading")
-@Tag(name = "Trading Controller", description = "Endpoints for executing stock trades")
+@Tag(name = "Trading Controller", description = "Endpoints for executing stock trades and viewing portfolio")
 public class TradingController {
 
     @Autowired
@@ -33,6 +33,7 @@ public class TradingController {
         return ResponseEntity.ok(executedOrder);
     }
 
+    // v-- ADD THIS NEW METHOD --v
     @Operation(summary = "Get user portfolio", description = "Retrieves the current user's stock portfolio, including all holdings and their current market values. Requires authentication.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/portfolio")
