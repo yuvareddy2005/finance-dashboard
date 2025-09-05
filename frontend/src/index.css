@@ -1,12 +1,13 @@
 /* Import a modern, clean font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
-/* Define our "Teal Graphite" color palette */
+/* Define our "Teal Graphite" color palette from your image */
 :root {
-  --background-dark: #1F2937; /* Dark cool gray */
-  --primary-teal: #14B8A6;    /* Vibrant teal */
-  --text-light: #E5E7EB;     /* Soft white */
-  --text-dark: #9CA3AF;      /* Lighter gray for secondary text */
+  --background-dark: #1A202C; /* Dark graphite from your image */
+  --primary-teal: #14B8A6;    /* Vibrant teal accent */
+  --text-light: #E5E7EB;     /* Soft white for primary text */
+  --text-dark: #A0AEC0;      /* Lighter gray for secondary text */
+  --border-color: #2D3748;   /* Subtle border color */
 }
 
 /* Apply global styles */
@@ -26,8 +27,11 @@ h1, h2, h3, h4, h5, h6 {
 a {
   color: var(--primary-teal);
   text-decoration: none; /* Remove default underline */
+  transition: color 0.2s ease-in-out; /* Smooth color change on hover */
 }
 
 a:hover {
-  text-decoration: underline; /* Add underline on hover */
+  text-decoration: underline;
+  color: #2DD4BF; /* Slightly lighter teal on hover */
 }
+
