@@ -1,12 +1,12 @@
 /* Import a modern, clean font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
 
-/* Define our NEW "Teal Graphite" color palette */
+/* Define our "Teal Graphite" color palette */
 :root {
-  --background-dark: #1F2937; /* A dark, cool gray */
-  --primary-teal: #14B8A6;   /* The vibrant teal accent from your image */
-  --text-light: #E5E7EB;     /* A soft white for main text */
-  --text-dark: #9CA3AF;      /* A lighter gray for secondary text */
+  --background-dark: #1F2937; /* Dark cool gray */
+  --primary-teal: #14B8A6;    /* Vibrant teal */
+  --text-light: #E5E7EB;     /* Soft white */
+  --text-dark: #9CA3AF;      /* Lighter gray for secondary text */
 }
 
 /* Apply global styles */
@@ -15,7 +15,6 @@ body {
   font-family: 'Inter', sans-serif;
   background-color: var(--background-dark);
   color: var(--text-light);
-  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -26,9 +25,9 @@ h1, h2, h3, h4, h5, h6 {
 
 a {
   color: var(--primary-teal);
-  text-decoration: none; /* Let's remove the default underline for a cleaner look */
+  text-decoration: none; /* Remove default underline */
 }
 
 a:hover {
-  text-decoration: underline; /* Add underline back on hover for better UX */
+  text-decoration: underline; /* Add underline on hover */
 }
