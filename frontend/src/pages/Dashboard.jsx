@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import apiService from '../services/apiService'; // Make sure this path is correct
+import apiService from '../services/apiService';
 
 // A simple styled card component for our dashboard
 const Card = ({ title, children, isLoading }) => {
   const cardStyle = {
-    backgroundColor: '#2D3748', // A slightly lighter dark gray for the "island"
+    backgroundColor: '#2D3748',
     borderRadius: '8px',
     padding: '1.5rem',
     marginBottom: '1rem',
@@ -37,13 +37,6 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          // Handle case where user is not logged in
-          return;
-        }
-
-        // Fetch all data points in parallel for better performance
         const [portfolioRes, accountRes, transactionsRes] = await Promise.all([
           apiService.get('/trading/portfolio'),
           apiService.get('/accounts/my-account'),
@@ -65,7 +58,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, []); // The empty array ensures this runs only once when the component mounts
+  }, []);
 
   const dashboardStyle = {
     maxWidth: '1200px',
@@ -95,7 +88,7 @@ const Dashboard = () => {
   };
 
   const amountStyle = (type) => ({
-    color: type === 'CREDIT' ? '#48BB78' : '#F56565', // Green for credit, Red for debit
+    color: type === 'CREDIT' ? '#48BB78' : '#F56565',
     fontWeight: '500',
   });
 

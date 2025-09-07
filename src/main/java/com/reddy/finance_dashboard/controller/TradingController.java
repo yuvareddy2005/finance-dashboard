@@ -41,4 +41,11 @@ public class TradingController {
         PortfolioResponse portfolio = tradingService.getPortfolio();
         return ResponseEntity.ok(portfolio);
     }
+
+    @Operation(summary = "Get user's portfolio value history", description = "Retrieves a series of data points representing the user's total portfolio value over the last 30 days. Requires authentication.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/portfolio/history")
+    public ResponseEntity<java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint>> getPortfolioHistory() {
+        return ResponseEntity.ok(tradingService.getPortfolioHistory());
+    }
 }

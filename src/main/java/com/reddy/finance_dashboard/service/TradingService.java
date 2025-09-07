@@ -158,4 +158,22 @@ public class TradingService {
 
         return new PortfolioResponse(totalPortfolioValue, holdingResponses);
     }
+
+    public java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> getPortfolioHistory() {
+        // In a real application, you would fetch this from a historical data table.
+        // For this project, we'll generate some realistic mock data.
+        java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> history = new java.util.ArrayList<>();
+        java.util.Random random = new java.util.Random();
+        BigDecimal lastValue = getPortfolio().getTotalValue(); // Get current portfolio value as a starting point
+
+        // Generate data for the last 30 days
+        for (int i = 30; i >= 0; i--) {
+            java.time.LocalDate date = java.time.LocalDate.now().minusDays(i);
+            // Fluctuate the value by +/- 2%
+            double fluctuation = (random.nextDouble() * 4) - 2;
+            lastValue = lastValue.multiply(java.math.BigDecimal.valueOf(1 + (fluctuation / 100)));
+            history.add(new com.reddy.finance_dashboard.dto.PortfolioHistoryPoint(date, lastValue.setScale(2, java.math.RoundingMode.HALF_UP)));
+        }
+        return history;
+    }
 }
