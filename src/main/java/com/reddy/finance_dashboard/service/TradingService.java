@@ -20,6 +20,8 @@ import com.reddy.finance_dashboard.entity.Portfolio;
 import com.reddy.finance_dashboard.entity.Stock;
 import com.reddy.finance_dashboard.entity.StockPrice;
 import com.reddy.finance_dashboard.entity.TradeOrder;
+import com.reddy.finance_dashboard.entity.Transaction;
+import com.reddy.finance_dashboard.entity.TransactionType;
 import com.reddy.finance_dashboard.entity.User;
 import com.reddy.finance_dashboard.repository.AccountRepository;
 import com.reddy.finance_dashboard.repository.HoldingRepository;
@@ -27,6 +29,7 @@ import com.reddy.finance_dashboard.repository.PortfolioRepository;
 import com.reddy.finance_dashboard.repository.StockPriceRepository;
 import com.reddy.finance_dashboard.repository.StockRepository;
 import com.reddy.finance_dashboard.repository.TradeOrderRepository;
+import com.reddy.finance_dashboard.repository.TransactionRepository;
 import com.reddy.finance_dashboard.repository.UserRepository;
 
 @Service
@@ -46,42 +49,42 @@ public class TradingService {
     private HoldingRepository holdingRepository;
     @Autowired
     private TradeOrderRepository tradeOrderRepository;
+    @Autowired
+    private TransactionRepository transactionRepository; // <-- ADD THIS
 
     @Transactional
     public TradeOrder executeTrade(TradeRequest tradeRequest) {
-        // 1. Get the currently authenticated user
         String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
-
-        // 2. Find their portfolio and account
         Portfolio portfolio = portfolioRepository.findByUser(user)
                 .orElseThrow(() -> new IllegalStateException("Portfolio not found for user"));
         Account account = accountRepository.findByUser(user)
                 .orElseThrow(() -> new IllegalStateException("Account not found for user"));
-
-        // 3. Find the stock they want to trade
         Stock stock = stockRepository.findByTickerSymbol(tradeRequest.getTickerSymbol())
                 .orElseThrow(() -> new IllegalStateException("Stock with symbol " + tradeRequest.getTickerSymbol() + " not found"));
-
-        // 4. Get the latest price for that stock
         BigDecimal latestPrice = stockPriceRepository.findLatestPriceByStockId(stock.getId())
                 .map(StockPrice::getPrice)
                 .orElseThrow(() -> new IllegalStateException("Could not determine latest price for stock"));
-
         BigDecimal quantity = BigDecimal.valueOf(tradeRequest.getQuantity());
         BigDecimal totalValue = latestPrice.multiply(quantity);
 
-        // 5. Validate and execute the trade
         if (tradeRequest.getOrderType() == TradeOrder.OrderType.BUY) {
-            // Check for sufficient funds
             if (account.getBalance().compareTo(totalValue) < 0) {
                 throw new IllegalStateException("Insufficient funds to complete purchase");
             }
-            // 6. Update account balance
             account.setBalance(account.getBalance().subtract(totalValue));
             
-            // 7. Update or create holding
+            // Create a DEBIT transaction for the purchase
+            Transaction transaction = new Transaction();
+            transaction.setAccount(account);
+            transaction.setAmount(totalValue);
+            transaction.setType(TransactionType.DEBIT);
+            transaction.setDescription("Bought " + quantity + " shares of " + stock.getTickerSymbol());
+            transaction.setTransactionDate(LocalDateTime.now());
+            transaction.setCategory("Trading");
+            transactionRepository.save(transaction);
+
             Holding holding = holdingRepository.findByPortfolioAndStock(portfolio, stock)
                     .orElseGet(() -> {
                         Holding newHolding = new Holding();
@@ -91,32 +94,37 @@ public class TradingService {
                         newHolding.setAverageBuyPrice(BigDecimal.ZERO);
                         return newHolding;
                     });
-
             BigDecimal newQuantity = holding.getQuantity().add(quantity);
             BigDecimal oldTotalValue = holding.getAverageBuyPrice().multiply(holding.getQuantity());
             BigDecimal newTotalValue = oldTotalValue.add(totalValue);
-            
             holding.setAverageBuyPrice(newTotalValue.divide(newQuantity, 2, RoundingMode.HALF_UP));
             holding.setQuantity(newQuantity);
             holdingRepository.save(holding);
 
         } else { // SELL order
-            // Check for sufficient shares
             Holding holding = holdingRepository.findByPortfolioAndStock(portfolio, stock)
                     .orElseThrow(() -> new IllegalStateException("No holdings found for this stock"));
             if (holding.getQuantity().compareTo(quantity) < 0) {
                 throw new IllegalStateException("Insufficient shares to complete sale");
             }
-            // 6. Update account balance
             account.setBalance(account.getBalance().add(totalValue));
-            // 7. Update holdings
+
+            // Create a CREDIT transaction for the sale
+            Transaction transaction = new Transaction();
+            transaction.setAccount(account);
+            transaction.setAmount(totalValue);
+            transaction.setType(TransactionType.CREDIT);
+            transaction.setDescription("Sold " + quantity + " shares of " + stock.getTickerSymbol());
+            transaction.setTransactionDate(LocalDateTime.now());
+            transaction.setCategory("Trading");
+            transactionRepository.save(transaction);
+            
             holding.setQuantity(holding.getQuantity().subtract(quantity));
             holdingRepository.save(holding);
         }
 
         accountRepository.save(account);
 
-        // 8. Record the trade in the trade_orders table
         TradeOrder tradeOrder = new TradeOrder();
         tradeOrder.setPortfolio(portfolio);
         tradeOrder.setStock(stock);
@@ -130,19 +138,12 @@ public class TradingService {
 
     @Transactional(readOnly = true)
     public PortfolioResponse getPortfolio() {
-        // 1. Get the currently authenticated user
         String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalStateException("User not found"));
-
-        // 2. Find their portfolio
         Portfolio portfolio = portfolioRepository.findByUser(user)
                 .orElseThrow(() -> new IllegalStateException("Portfolio not found for user"));
-
-        // 3. Find all their holdings
         List<Holding> holdings = holdingRepository.findByPortfolio(portfolio);
-
-        // 4. Convert holdings to DTOs and calculate total value
         List<HoldingResponse> holdingResponses = holdings.stream()
             .map(holding -> {
                 BigDecimal latestPrice = stockPriceRepository.findLatestPriceByStockId(holding.getStock().getId())
@@ -151,25 +152,18 @@ public class TradingService {
                 return HoldingResponse.fromEntity(holding, latestPrice);
             })
             .collect(Collectors.toList());
-
         BigDecimal totalPortfolioValue = holdingResponses.stream()
             .map(HoldingResponse::getCurrentValue)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         return new PortfolioResponse(totalPortfolioValue, holdingResponses);
     }
-
+    
     public java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> getPortfolioHistory() {
-        // In a real application, you would fetch this from a historical data table.
-        // For this project, we'll generate some realistic mock data.
         java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> history = new java.util.ArrayList<>();
         java.util.Random random = new java.util.Random();
-        BigDecimal lastValue = getPortfolio().getTotalValue(); // Get current portfolio value as a starting point
-
-        // Generate data for the last 30 days
+        BigDecimal lastValue = getPortfolio().getTotalValue();
         for (int i = 30; i >= 0; i--) {
             java.time.LocalDate date = java.time.LocalDate.now().minusDays(i);
-            // Fluctuate the value by +/- 2%
             double fluctuation = (random.nextDouble() * 4) - 2;
             lastValue = lastValue.multiply(java.math.BigDecimal.valueOf(1 + (fluctuation / 100)));
             history.add(new com.reddy.finance_dashboard.dto.PortfolioHistoryPoint(date, lastValue.setScale(2, java.math.RoundingMode.HALF_UP)));

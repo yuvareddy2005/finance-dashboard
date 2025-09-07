@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import apiService from '../services/apiService';
+//import PortfolioChart from '../components/PortfolioChart';
 
 // A simple styled card component for our dashboard
 const Card = ({ title, children, isLoading }) => {
@@ -119,6 +120,8 @@ const Dashboard = () => {
         </Card>
       </div>
       
+      {/* <PortfolioChart /> */}
+
       <Card title="Recent Transactions" isLoading={isLoading}>
         <ul style={transactionListStyle}>
           {dashboardData.recentTransactions.length > 0 ? (

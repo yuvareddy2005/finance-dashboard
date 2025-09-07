@@ -1,14 +1,7 @@
 package com.reddy.finance_dashboard.controller;
 
-import com.reddy.finance_dashboard.entity.Account;
-import com.reddy.finance_dashboard.entity.Transaction;
-import com.reddy.finance_dashboard.entity.User;
-import com.reddy.finance_dashboard.repository.AccountRepository;
-import com.reddy.finance_dashboard.repository.TransactionRepository;
-import com.reddy.finance_dashboard.repository.UserRepository;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,7 +9,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.reddy.finance_dashboard.entity.Account;
+import com.reddy.finance_dashboard.entity.Transaction;
+import com.reddy.finance_dashboard.entity.User;
+import com.reddy.finance_dashboard.repository.AccountRepository;
+import com.reddy.finance_dashboard.repository.TransactionRepository;
+import com.reddy.finance_dashboard.repository.UserRepository;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
@@ -43,9 +45,9 @@ public class TransactionController {
         Account account = accountRepository.findByUser(user)
                 .orElseThrow(() -> new IllegalStateException("Account not found for user"));
 
-        List<Transaction> transactions = transactionRepository.findTop5ByAccountOrderByTransactionDateDesc(account);
+        // v-- CALL THE NEW, EXPLICIT QUERY METHOD --v
+        List<Transaction> transactions = transactionRepository.findRecentTransactionsByAccount(account);
 
         return ResponseEntity.ok(transactions);
     }
 }
-

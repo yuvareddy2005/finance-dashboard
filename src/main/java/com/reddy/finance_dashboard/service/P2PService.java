@@ -11,9 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.reddy.finance_dashboard.dto.P2PTransferRequest;
 import com.reddy.finance_dashboard.entity.Account;
 import com.reddy.finance_dashboard.entity.P2PTransfer;
+import com.reddy.finance_dashboard.entity.Transaction; // <-- ADD THIS IMPORT
+import com.reddy.finance_dashboard.entity.TransactionType; // <-- ADD THIS IMPORT
 import com.reddy.finance_dashboard.entity.User;
 import com.reddy.finance_dashboard.repository.AccountRepository;
 import com.reddy.finance_dashboard.repository.P2PTransferRepository;
+import com.reddy.finance_dashboard.repository.TransactionRepository; // <-- ADD THIS IMPORT
 import com.reddy.finance_dashboard.repository.UserRepository;
 
 @Service
@@ -28,26 +31,24 @@ public class P2PService {
     @Autowired
     private P2PTransferRepository p2pTransferRepository;
 
+    @Autowired
+    private TransactionRepository transactionRepository; // <-- INJECT THE REPOSITORY
+
     @Transactional
     public P2PTransfer initiateTransfer(P2PTransferRequest transferRequest) {
-        // 1. Get the currently authenticated sender from the security context
+        // 1. Get users and accounts
         String senderEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new IllegalStateException("Sender not found"));
-
-        // 2. Find the recipient user by their email
         User recipient = userRepository.findByEmail(transferRequest.getRecipientEmail())
                 .orElseThrow(() -> new IllegalStateException("Recipient not found"));
-
-        // 3. Find the accounts for both sender and recipient
         Account senderAccount = accountRepository.findByUser(sender)
                 .orElseThrow(() -> new IllegalStateException("Sender account not found"));
         Account recipientAccount = accountRepository.findByUser(recipient)
                 .orElseThrow(() -> new IllegalStateException("Recipient account not found"));
-
         BigDecimal amount = transferRequest.getAmount();
 
-        // 4. Validate the transfer
+        // 2. Validate the transfer
         if (sender.getId().equals(recipient.getId())) {
             throw new IllegalStateException("Sender and recipient cannot be the same person.");
         }
@@ -58,11 +59,33 @@ public class P2PService {
             throw new IllegalStateException("Insufficient funds for transfer.");
         }
 
-        // 5. Atomically debit the sender's account and credit the recipient's account
+        // 3. Perform the transfer
         senderAccount.setBalance(senderAccount.getBalance().subtract(amount));
         recipientAccount.setBalance(recipientAccount.getBalance().add(amount));
 
-        // 6. Record the transfer in the p2p_transfers table
+        // v-- CREATE TRANSACTION RECORDS FOR SENDER AND RECIPIENT --v
+        
+        // 4. Create DEBIT transaction for the sender
+        Transaction senderTransaction = new Transaction();
+        senderTransaction.setAccount(senderAccount);
+        senderTransaction.setAmount(amount);
+        senderTransaction.setType(TransactionType.DEBIT);
+        senderTransaction.setDescription("Sent to " + recipient.getFirstName() + " " + recipient.getLastName());
+        senderTransaction.setTransactionDate(LocalDateTime.now());
+        senderTransaction.setCategory("P2P Transfer");
+        transactionRepository.save(senderTransaction);
+
+        // 5. Create CREDIT transaction for the recipient
+        Transaction recipientTransaction = new Transaction();
+        recipientTransaction.setAccount(recipientAccount);
+        recipientTransaction.setAmount(amount);
+        recipientTransaction.setType(TransactionType.CREDIT);
+        recipientTransaction.setDescription("Received from " + sender.getFirstName() + " " + sender.getLastName());
+        recipientTransaction.setTransactionDate(LocalDateTime.now());
+        recipientTransaction.setCategory("P2P Transfer");
+        transactionRepository.save(recipientTransaction);
+
+        // 6. Record the P2P transfer itself
         P2PTransfer transfer = new P2PTransfer();
         transfer.setSenderAccount(senderAccount);
         transfer.setRecipientAccount(recipientAccount);
