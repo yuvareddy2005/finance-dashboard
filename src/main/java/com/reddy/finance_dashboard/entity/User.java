@@ -1,5 +1,6 @@
 package com.reddy.finance_dashboard.entity;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class User implements UserDetails { // <-- IMPLEMENT THE INTERFACE
     @Column(nullable = false)
     private String password;
 
+    private LocalDateTime createdAt;
     // v-- ADD THESE REQUIRED METHODS FROM UserDetails --v
 
     @Override

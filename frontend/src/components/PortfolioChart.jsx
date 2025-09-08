@@ -103,7 +103,7 @@ const PortfolioChart = () => {
 
   return (
     <div style={chartContainerStyle}>
-      <h3 style={titleStyle}>30-Day Portfolio Value (₹)</h3>
+      <h3 style={titleStyle}>30-Day Net Worth (₹)</h3>
       <div style={{ height: '350px' }}>
         {chartData && <Line options={options} data={chartData} />}
       </div>

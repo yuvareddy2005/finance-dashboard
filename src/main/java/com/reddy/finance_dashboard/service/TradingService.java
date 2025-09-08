@@ -1,8 +1,8 @@
 package com.reddy.finance_dashboard.service;
 
-import java.text.NumberFormat;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
@@ -163,15 +163,42 @@ public class TradingService {
         return new PortfolioResponse(totalPortfolioValue, holdingResponses);
     }
     
-    public java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> getPortfolioHistory() {
+    // Replace the existing getPortfolioHistory method in TradingService.java
+
+    // Replace the existing getPortfolioHistory method in TradingService.java
+
+    public List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> getPortfolioHistory() {
+        String userEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new IllegalStateException("User not found"));
+        Account account = accountRepository.findByUser(user)
+                .orElseThrow(() -> new IllegalStateException("Account not found for user"));
+
+        BigDecimal portfolioValue = getPortfolio().getTotalValue();
+        BigDecimal cashBalance = account.getBalance();
+        BigDecimal netWorth = portfolioValue.add(cashBalance);
+
         java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> history = new java.util.ArrayList<>();
         java.util.Random random = new java.util.Random();
-        BigDecimal lastValue = getPortfolio().getTotalValue();
+        BigDecimal lastValue = netWorth;
+
+        // The user's creation date (or the start of today if null for old users)
+        LocalDateTime userCreationDate = user.getCreatedAt() != null ? user.getCreatedAt() : LocalDateTime.now().toLocalDate().atStartOfDay();
+
         for (int i = 30; i >= 0; i--) {
             java.time.LocalDate date = java.time.LocalDate.now().minusDays(i);
-            double fluctuation = (random.nextDouble() * 4) - 2;
-            lastValue = lastValue.multiply(java.math.BigDecimal.valueOf(1 + (fluctuation / 100)));
-            history.add(new com.reddy.finance_dashboard.dto.PortfolioHistoryPoint(date, lastValue.setScale(2, java.math.RoundingMode.HALF_UP)));
+            BigDecimal valueForDay;
+
+            // If the date is before the user was created, value is 0
+            if (date.isBefore(userCreationDate.toLocalDate())) {
+                valueForDay = BigDecimal.ZERO;
+            } else {
+                // Otherwise, calculate the simulated value
+                double fluctuation = (random.nextDouble() * 4) - 2;
+                lastValue = lastValue.multiply(java.math.BigDecimal.valueOf(1 + (fluctuation / 100)));
+                valueForDay = lastValue;
+            }
+            history.add(new com.reddy.finance_dashboard.dto.PortfolioHistoryPoint(date, valueForDay.setScale(2, java.math.RoundingMode.HALF_UP)));
         }
         return history;
     }
