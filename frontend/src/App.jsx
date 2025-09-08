@@ -5,6 +5,7 @@ import AuthPage from './pages/AuthPage';
 import Dashboard from './pages/Dashboard';
 import PortfolioPage from './pages/PortfolioPage';
 import TransfersPage from './pages/TransfersPage';
+import TradingPage from './pages/TradingPage';
 
 function App() {
   // We'll check for the token in localStorage to see if the user is authenticated
@@ -21,6 +22,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
         <Route path="/transfers" element={<TransfersPage />} />
+        <Route path="/trading" element={<TradingPage />} />
         {/* We will add more private routes like /portfolio here later */}
       </Route>
 

@@ -1,9 +1,11 @@
 package com.reddy.finance_dashboard.service;
 
+import java.text.NumberFormat;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.reddy.finance_dashboard.dto.HoldingResponse;
 import com.reddy.finance_dashboard.dto.PortfolioResponse;
+import com.reddy.finance_dashboard.dto.StockStatsDTO;
 import com.reddy.finance_dashboard.dto.TradeRequest;
 import com.reddy.finance_dashboard.entity.Account;
 import com.reddy.finance_dashboard.entity.Holding;
@@ -31,6 +34,8 @@ import com.reddy.finance_dashboard.repository.StockRepository;
 import com.reddy.finance_dashboard.repository.TradeOrderRepository;
 import com.reddy.finance_dashboard.repository.TransactionRepository;
 import com.reddy.finance_dashboard.repository.UserRepository;
+
+import net.datafaker.Faker;
 
 @Service
 public class TradingService {
@@ -169,5 +174,82 @@ public class TradingService {
             history.add(new com.reddy.finance_dashboard.dto.PortfolioHistoryPoint(date, lastValue.setScale(2, java.math.RoundingMode.HALF_UP)));
         }
         return history;
+    }
+
+    public List<Stock> getAllStocks() {
+        return stockRepository.findAll();
+    }
+    // Replace the old getStockPriceHistory method with this one
+
+    public List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint> getStockPriceHistory(String tickerSymbol, String range) {
+        Stock stock = stockRepository.findByTickerSymbol(tickerSymbol)
+                .orElseThrow(() -> new IllegalStateException("Stock not found with symbol: " + tickerSymbol));
+
+        LocalDateTime startDate = LocalDateTime.now();
+        switch (range.toUpperCase()) {
+            case "1D":
+                startDate = startDate.minusDays(1);
+                break;
+            case "5D":
+                startDate = startDate.minusDays(5);
+                break;
+            case "1M":
+                startDate = startDate.minusMonths(1);
+                break;
+            case "6M":
+                startDate = startDate.minusMonths(6);
+                break;
+            case "1Y":
+                startDate = startDate.minusYears(1);
+                break;
+            case "5Y":
+                startDate = startDate.minusYears(5);
+                break;
+            case "ALL":
+            default:
+                startDate = startDate.minusYears(100); // A long time ago to get all data
+                break;
+        }
+
+        List<StockPrice> prices = stockPriceRepository.findPriceHistoryByStockIdSince(stock.getId(), startDate);
+
+        return prices.stream()
+                .map(price -> new com.reddy.finance_dashboard.dto.PortfolioHistoryPoint(
+                        price.getTimestamp().toLocalDate(),
+                        price.getPrice()))
+                .collect(Collectors.toList());
+    }
+    public StockStatsDTO getStockStats(String tickerSymbol) {
+        Stock stock = stockRepository.findByTickerSymbol(tickerSymbol)
+                .orElseThrow(() -> new IllegalStateException("Stock not found with symbol: " + tickerSymbol));
+
+        List<StockPrice> latestTwoPrices = stockPriceRepository.findTop2ByStockIdOrderByTimestampDesc(stock.getId());
+        
+        BigDecimal openPrice = stockPriceRepository.findPriceAtOrAfterTimestamp(stock.getId(), LocalDateTime.now().toLocalDate().atStartOfDay())
+                .map(StockPrice::getPrice)
+                .orElse(latestTwoPrices.isEmpty() ? BigDecimal.ZERO : latestTwoPrices.get(0).getPrice());
+
+        BigDecimal prevClose = (latestTwoPrices.size() > 1) ? latestTwoPrices.get(1).getPrice() : openPrice;
+
+        // Simulate Volume and Value
+        Faker faker = new Faker();
+        long volumeValue = faker.number().numberBetween(1_000_000L, 50_000_000L);
+        String volume = NumberFormat.getNumberInstance(new Locale("en", "IN")).format(volumeValue);
+        String totalTradedValue = NumberFormat.getNumberInstance(new Locale("en", "IN")).format(volumeValue / 1000) + " Cr";
+
+        // Simulate Circuits
+        BigDecimal currentPrice = latestTwoPrices.get(0).getPrice();
+        BigDecimal upperCircuit = currentPrice.multiply(new BigDecimal("1.10")).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal lowerCircuit = currentPrice.multiply(new BigDecimal("0.90")).setScale(2, RoundingMode.HALF_UP);
+
+
+        return StockStatsDTO.builder()
+                .open(openPrice)
+                .prevClose(prevClose)
+                .volume(volume)
+                .totalTradedValue(totalTradedValue)
+                .upperCircuit(upperCircuit)
+                .lowerCircuit(lowerCircuit)
+                .build();
     }
 }

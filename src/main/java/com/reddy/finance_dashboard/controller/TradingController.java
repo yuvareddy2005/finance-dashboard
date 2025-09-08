@@ -1,15 +1,20 @@
 package com.reddy.finance_dashboard.controller;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping; // <-- ADD THIS IMPORT
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping; // <-- ADD THIS IMPORT
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.reddy.finance_dashboard.dto.PortfolioResponse; // <-- ADD THIS IMPORT
-import com.reddy.finance_dashboard.dto.TradeRequest;
+import com.reddy.finance_dashboard.dto.PortfolioResponse;
+import com.reddy.finance_dashboard.dto.StockStatsDTO;
+import com.reddy.finance_dashboard.dto.TradeRequest; // <-- ADD THIS IMPORT
+import com.reddy.finance_dashboard.entity.Stock;
 import com.reddy.finance_dashboard.entity.TradeOrder;
 import com.reddy.finance_dashboard.service.TradingService;
 
@@ -47,5 +52,28 @@ public class TradingController {
     @GetMapping("/portfolio/history")
     public ResponseEntity<java.util.List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint>> getPortfolioHistory() {
         return ResponseEntity.ok(tradingService.getPortfolioHistory());
+    }
+
+    @Operation(summary = "Get all available stocks", description = "Retrieves a list of all stocks available for trading in the market.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/stocks")
+    public ResponseEntity<List<Stock>> getAllStocks() {
+        return ResponseEntity.ok(tradingService.getAllStocks());
+    }
+
+    @Operation(summary = "Get historical prices for a single stock", description = "Retrieves the price history for a given stock ticker symbol within a specified time range.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/stocks/{tickerSymbol}/history")
+    public ResponseEntity<List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint>> getStockPriceHistory(
+            @PathVariable String tickerSymbol,
+            @RequestParam(defaultValue = "1Y") String range) { // Default to 1 Year
+        return ResponseEntity.ok(tradingService.getStockPriceHistory(tickerSymbol, range));
+    }   
+
+    @Operation(summary = "Get statistics for a single stock", description = "Retrieves key statistics like open, previous close, and volume for a given stock.")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/stocks/{tickerSymbol}/stats")
+    public ResponseEntity<StockStatsDTO> getStockStats(@PathVariable String tickerSymbol) {
+        return ResponseEntity.ok(tradingService.getStockStats(tickerSymbol));
     }
 }

@@ -1,6 +1,8 @@
 package com.reddy.finance_dashboard.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -117,34 +119,49 @@ public class DataSeedingService implements CommandLineRunner {
         }
     }
 
+    // v-- THIS METHOD HAS BEEN REWRITTEN --v
     private void seedStockMarket(Faker faker) {
         List<Stock> seededStocks = new ArrayList<>();
-        Set<String> usedSymbols = new HashSet<>(); // <-- Keep track of used symbols
+        Set<String> usedSymbols = new HashSet<>();
 
-        // Create 50 mock stocks
         for (int i = 0; i < 50; i++) {
             Stock stock = new Stock();
-            
-            // v-- ENSURE UNIQUE TICKER SYMBOL --v
             String ticker;
             do {
                 ticker = faker.stock().nsdqSymbol();
             } while (usedSymbols.contains(ticker));
             usedSymbols.add(ticker);
-            
             stock.setTickerSymbol(ticker);
             stock.setCompanyName(faker.company().name());
             seededStocks.add(stockRepository.save(stock));
         }
 
-        // For each stock, create 100 historical price points
+        Random random = new Random();
         for (Stock stock : seededStocks) {
-            for (int i = 0; i < 100; i++) {
+            // Start with a random price from 2 years ago
+            BigDecimal currentPrice = new BigDecimal(faker.number().randomDouble(2, 50, 3000));
+            LocalDateTime timestamp = LocalDateTime.now().minusYears(2);
+
+            // Generate price points from 2 years ago until today
+            while(timestamp.isBefore(LocalDateTime.now())) {
                 StockPrice stockPrice = new StockPrice();
                 stockPrice.setStock(stock);
-                stockPrice.setPrice(new BigDecimal(faker.number().randomDouble(2, 50, 3000)));
-                stockPrice.setTimestamp(faker.date().past(365 * 2, TimeUnit.DAYS).toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+                
+                // Fluctuate the price by +/- 3%
+                double fluctuation = (random.nextDouble() * 6) - 3;
+                currentPrice = currentPrice.multiply(BigDecimal.valueOf(1 + (fluctuation / 100)));
+
+                // Ensure price doesn't go below a minimum value (e.g., 1.00)
+                if (currentPrice.compareTo(BigDecimal.ONE) < 0) {
+                    currentPrice = BigDecimal.ONE;
+                }
+                
+                stockPrice.setPrice(currentPrice.setScale(2, RoundingMode.HALF_UP));
+                stockPrice.setTimestamp(timestamp);
                 stockPriceRepository.save(stockPrice);
+                
+                // Move to the next day
+                timestamp = timestamp.plusDays(1);
             }
         }
     }
