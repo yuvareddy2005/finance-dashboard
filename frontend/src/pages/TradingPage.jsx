@@ -1,3 +1,4 @@
+// src/pages/TradingPage.jsx
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/apiService';
 import StockChart from '../components/StockChart';
@@ -8,19 +9,8 @@ import StockStatsPanel from '../components/StockStatsPanel';
 const tradingPageStyle = { display: 'flex', gap: '1.5rem', height: 'calc(100vh - 120px)' };
 const stockListStyle = { flex: '0 0 300px', backgroundColor: '#2D3748', borderRadius: '8px', padding: '1rem', overflowY: 'auto' };
 const stockListItemStyle = (isSelected) => ({ padding: '0.75rem', borderRadius: '6px', cursor: 'pointer', marginBottom: '0.5rem', backgroundColor: isSelected ? 'var(--primary-teal)' : 'transparent', color: isSelected ? '#1A202C' : 'var(--text-light)', fontWeight: isSelected ? 'bold' : 'normal' });
-
 const mainContentStyle = { flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto' };
-
-// v-- THIS IS THE ONLY STYLE OBJECT THAT HAS CHANGED --v
-const chartContainerStyle = {
-  height: 'calc(100vh - 230px)', // Fill viewport height minus header/padding
-  minHeight: '500px',             // Set a minimum height
-  backgroundColor: '#2D3748',
-  borderRadius: '8px',
-  padding: '2rem',
-  display: 'flex',
-  flexDirection: 'column'
-};
+const chartContainerStyle = { height: 'calc(100vh - 230px)', minHeight: '500px', backgroundColor: '#2D3748', borderRadius: '8px', padding: '2rem', display: 'flex', flexDirection: 'column' };
 const tradePanelContainerStyle = { backgroundColor: '#2D3748', borderRadius: '8px', padding: '2rem' };
 
 const TradingPage = () => {
@@ -34,6 +24,7 @@ const TradingPage = () => {
   const [isLoading, setIsLoading] = useState({ stocks: true, chart: true, stats: true });
   const [error, setError] = useState(null);
   const [tradeCount, setTradeCount] = useState(0);
+  const [chartOptions, setChartOptions] = useState({});
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -70,7 +61,7 @@ const TradingPage = () => {
         ]);
         setChartData({
           labels: historyRes.data.map(p => p.date),
-          datasets: [{ data: historyRes.data.map(p => p.value), borderColor: '#14B8A6', backgroundColor: 'rgba(20, 184, 166, 0.1)', borderWidth: 2, pointRadius: 0, fill: true }],
+          datasets: [{ data: historyRes.data.map(p => p.value), borderColor: '#14B8A6', backgroundColor: 'rgba(20, 184, 166, 0.1)', borderWidth: 2, pointRadius: 0, fill: true, label: 'Price' }],
         });
         setStockStats(statsRes.data);
       } catch (err) {
@@ -84,7 +75,40 @@ const TradingPage = () => {
     fetchStockDetails();
   }, [selectedStock, selectedRange]);
 
-  const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(ctx.parsed.y)}` } } }, scales: { x: { type: 'time', time: { unit: 'month' }, ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } }, y: { ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } } }, interaction: { mode: 'index', intersect: false } };
+  useEffect(() => {
+    const getTimeUnit = (range) => {
+        switch(range) {
+            case '1D': return 'hour';
+            case '5D': return 'day';
+            case '1W': return 'day';
+            case '1M': return 'day';
+            default: return 'month';
+        }
+    }
+
+    const newOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(ctx.parsed.y)}` } } },
+      scales: {
+        x: { type: 'time', time: { unit: getTimeUnit(selectedRange) }, ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } },
+        y: { ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } }
+      },
+      interaction: { mode: 'index', intersect: false }
+    };
+
+    if (selectedRange === '1D' && chartData && chartData.datasets[0].data.length > 0) {
+        const prices = chartData.datasets[0].data;
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        const padding = (max - min) * 0.1 || 1;
+        newOptions.scales.y.min = min - padding;
+        newOptions.scales.y.max = max + padding;
+    }
+    setChartOptions(newOptions);
+
+  }, [chartData, selectedRange]);
+
 
   if (isLoading.stocks) return <p>Loading trading terminal...</p>;
   if (error) return <p style={{ color: '#F56565' }}>{error}</p>;

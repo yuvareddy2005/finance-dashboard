@@ -18,7 +18,7 @@ const buttonStyle = (isActive) => ({
 });
 
 const TimeframeSelector = ({ selectedRange, onSelectRange }) => {
-  const ranges = ['1M', '6M', '1Y', '5Y', 'ALL'];
+  const ranges = ['1D','1W','1M', '6M', '1Y', '5Y', 'ALL'];
 
   return (
     <div style={containerStyle}>

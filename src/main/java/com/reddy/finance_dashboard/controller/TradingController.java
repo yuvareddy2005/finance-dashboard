@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.reddy.finance_dashboard.dto.PortfolioResponse;
+import com.reddy.finance_dashboard.dto.StockResponseDTO;
 import com.reddy.finance_dashboard.dto.StockStatsDTO;
 import com.reddy.finance_dashboard.dto.TradeRequest; // <-- ADD THIS IMPORT
-import com.reddy.finance_dashboard.entity.Stock;
 import com.reddy.finance_dashboard.entity.TradeOrder;
 import com.reddy.finance_dashboard.service.TradingService;
 
@@ -54,10 +54,10 @@ public class TradingController {
         return ResponseEntity.ok(tradingService.getPortfolioHistory());
     }
 
-    @Operation(summary = "Get all available stocks", description = "Retrieves a list of all stocks available for trading in the market.")
+    @Operation(summary = "Get all available stocks", description = "Retrieves a list of all stocks available for trading, including their current price.")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/stocks")
-    public ResponseEntity<List<Stock>> getAllStocks() {
+    public ResponseEntity<List<StockResponseDTO>> getAllStocks() {
         return ResponseEntity.ok(tradingService.getAllStocks());
     }
 
@@ -66,7 +66,7 @@ public class TradingController {
     @GetMapping("/stocks/{tickerSymbol}/history")
     public ResponseEntity<List<com.reddy.finance_dashboard.dto.PortfolioHistoryPoint>> getStockPriceHistory(
             @PathVariable String tickerSymbol,
-            @RequestParam(defaultValue = "1Y") String range) { // Default to 1 Year
+            @RequestParam(defaultValue = "1M") String range) { // Default to 1 Month
         return ResponseEntity.ok(tradingService.getStockPriceHistory(tickerSymbol, range));
     }   
 
