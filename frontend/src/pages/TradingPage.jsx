@@ -1,4 +1,3 @@
-// src/pages/TradingPage.jsx
 import React, { useState, useEffect } from 'react';
 import apiService from '../services/apiService';
 import StockChart from '../components/StockChart';
@@ -35,12 +34,19 @@ const TradingPage = () => {
           apiService.get('/trading/portfolio'),
           apiService.get('/accounts/my-account'),
         ]);
-        setAllStocks(stocksRes.data);
+        
+        const stocks = stocksRes.data;
+        setAllStocks(stocks);
         setPortfolio(portfolioRes.data);
         setAccount(accountRes.data);
-        if (tradeCount === 0 && stocksRes.data.length > 0) {
-          setSelectedStock(stocksRes.data[0]);
+
+        // v-- LOGIC TO LOAD THE SAVED STOCK --v
+        if (stocks.length > 0) {
+          const lastSelectedTicker = localStorage.getItem('lastSelectedStock');
+          const stockToSelect = stocks.find(s => s.tickerSymbol === lastSelectedTicker) || stocks[0];
+          setSelectedStock(stockToSelect);
         }
+
       } catch (err) {
         setError('Failed to load trading data.');
       } finally {
@@ -49,6 +55,14 @@ const TradingPage = () => {
     };
     fetchInitialData();
   }, [tradeCount]);
+
+  // v-- NEW EFFECT TO SAVE THE SELECTED STOCK --v
+  useEffect(() => {
+    if (selectedStock) {
+      localStorage.setItem('lastSelectedStock', selectedStock.tickerSymbol);
+    }
+  }, [selectedStock]);
+
 
   useEffect(() => {
     if (!selectedStock) return;
@@ -85,30 +99,21 @@ const TradingPage = () => {
             default: return 'month';
         }
     }
-
     const newOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(ctx.parsed.y)}` } } },
-      scales: {
-        x: { type: 'time', time: { unit: getTimeUnit(selectedRange) }, ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } },
-        y: { ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } }
-      },
+      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(ctx.parsed.y)}` } } },
+      scales: { x: { type: 'time', time: { unit: getTimeUnit(selectedRange) }, ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } }, y: { ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } } },
       interaction: { mode: 'index', intersect: false }
     };
-
     if (selectedRange === '1D' && chartData && chartData.datasets[0].data.length > 0) {
         const prices = chartData.datasets[0].data;
         const min = Math.min(...prices);
         const max = Math.max(...prices);
-        const padding = (max - min) * 0.1 || 1;
-        newOptions.scales.y.min = min - padding;
-        newOptions.scales.y.max = max + padding;
+        const padding = (max - min) * 0.25 || 2;
+        newOptions.scales.y.min = Math.floor(min - padding);
+        newOptions.scales.y.max = Math.ceil(max + padding);
     }
     setChartOptions(newOptions);
-
   }, [chartData, selectedRange]);
-
 
   if (isLoading.stocks) return <p>Loading trading terminal...</p>;
   if (error) return <p style={{ color: '#F56565' }}>{error}</p>;
