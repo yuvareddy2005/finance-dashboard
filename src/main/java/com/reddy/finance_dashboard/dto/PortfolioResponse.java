@@ -1,3 +1,4 @@
+// src/main/java/com/reddy/finance_dashboard/dto/PortfolioResponse.java
 package com.reddy.finance_dashboard.dto;
 
 import java.math.BigDecimal;
@@ -19,4 +20,7 @@ public class PortfolioResponse {
 
     @Schema(description = "A list of all the individual stock holdings in the portfolio")
     private List<HoldingResponse> holdings;
+
+    @Schema(description = "A list of all past completed trades with realized profit/loss")
+    private List<PastTradeResponse> pastTrades; // <-- ADD THIS NEW FIELD
 }

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // <-- Import useLocation and useNavigate
 import apiService from '../services/apiService';
 import StockChart from '../components/StockChart';
 import TimeframeSelector from '../components/TimeframeSelector';
 import TradePanel from '../components/TradePanel';
 import StockStatsPanel from '../components/StockStatsPanel';
 
+// ... (All style objects remain the same)
 const tradingPageStyle = { display: 'flex', gap: '1.5rem', height: 'calc(100vh - 120px)' };
 const stockListStyle = { flex: '0 0 300px', backgroundColor: '#2D3748', borderRadius: '8px', padding: '1rem', overflowY: 'auto' };
 const stockListItemStyle = (isSelected) => ({ padding: '0.75rem', borderRadius: '6px', cursor: 'pointer', marginBottom: '0.5rem', backgroundColor: isSelected ? 'var(--primary-teal)' : 'transparent', color: isSelected ? '#1A202C' : 'var(--text-light)', fontWeight: isSelected ? 'bold' : 'normal' });
@@ -13,6 +15,9 @@ const chartContainerStyle = { height: 'calc(100vh - 230px)', minHeight: '500px',
 const tradePanelContainerStyle = { backgroundColor: '#2D3748', borderRadius: '8px', padding: '2rem' };
 
 const TradingPage = () => {
+  const location = useLocation(); // <-- Get location object
+  const navigate = useNavigate(); // <-- Get navigate function
+
   const [allStocks, setAllStocks] = useState([]);
   const [selectedStock, setSelectedStock] = useState(null);
   const [portfolio, setPortfolio] = useState(null);
@@ -34,14 +39,19 @@ const TradingPage = () => {
           apiService.get('/trading/portfolio'),
           apiService.get('/accounts/my-account'),
         ]);
-        
         const stocks = stocksRes.data;
         setAllStocks(stocks);
         setPortfolio(portfolioRes.data);
         setAccount(accountRes.data);
 
-        // v-- LOGIC TO LOAD THE SAVED STOCK --v
-        if (stocks.length > 0) {
+        // v-- THIS IS THE NEW LOGIC --v
+        if (location.state?.defaultStock) {
+          // If we came from the portfolio page, select that stock
+          setSelectedStock(location.state.defaultStock);
+          // Clear the state so it doesn't persist on refresh
+          navigate(location.pathname, { replace: true });
+        } else if (stocks.length > 0) {
+          // Otherwise, use the last selected stock from localStorage or the first stock
           const lastSelectedTicker = localStorage.getItem('lastSelectedStock');
           const stockToSelect = stocks.find(s => s.tickerSymbol === lastSelectedTicker) || stocks[0];
           setSelectedStock(stockToSelect);
@@ -56,13 +66,11 @@ const TradingPage = () => {
     fetchInitialData();
   }, [tradeCount]);
 
-  // v-- NEW EFFECT TO SAVE THE SELECTED STOCK --v
   useEffect(() => {
     if (selectedStock) {
       localStorage.setItem('lastSelectedStock', selectedStock.tickerSymbol);
     }
   }, [selectedStock]);
-
 
   useEffect(() => {
     if (!selectedStock) return;
@@ -99,11 +107,7 @@ const TradingPage = () => {
             default: return 'month';
         }
     }
-    const newOptions = {
-      responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(ctx.parsed.y)}` } } },
-      scales: { x: { type: 'time', time: { unit: getTimeUnit(selectedRange) }, ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } }, y: { ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } } },
-      interaction: { mode: 'index', intersect: false }
-    };
+    const newOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: (ctx) => `${ctx.dataset.label || ''}: ${new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(ctx.parsed.y)}` } } }, scales: { x: { type: 'time', time: { unit: getTimeUnit(selectedRange) }, ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } }, y: { ticks: { color: '#A0AEC0' }, grid: { color: 'rgba(160, 174, 192, 0.1)' } } }, interaction: { mode: 'index', intersect: false } };
     if (selectedRange === '1D' && chartData && chartData.datasets[0].data.length > 0) {
         const prices = chartData.datasets[0].data;
         const min = Math.min(...prices);
